@@ -1,12 +1,14 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "npm install",
   "builds": [
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
-        "buildCommand": "cd ../frontend && npm install && npm run build"
+        "distDir": "dist"
       }
     },
     {
@@ -17,22 +19,26 @@
   "routes": [
     {
       "src": "/api/health",
-      "dest": "backend/api/health.js"
+      "dest": "/backend/api/health.js"
     },
     {
       "src": "/api/playlist/(.*)",
-      "dest": "backend/api/playlist/[playlistId].js?playlistId=$1"
+      "dest": "/backend/api/playlist/[playlistId].js?playlistId=$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/api/404.js"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/assets/(.*)",
-      "dest": "frontend/dist/assets/$1"
+      "dest": "/frontend/dist/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/dist/index.html"
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }

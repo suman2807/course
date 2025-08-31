@@ -6,6 +6,7 @@ This guide explains how to deploy the YouTube to Course Converter application to
 
 1. A Vercel account (free at [vercel.com](https://vercel.com))
 2. A YouTube Data API key (get one from [Google Cloud Console](https://console.cloud.google.com/))
+3. Git installed on your computer
 
 ## Deployment Steps
 
@@ -16,6 +17,7 @@ Make sure you have the following files in your project root:
 - `frontend/` (React frontend)
 - `backend/` (Backend API functions)
 - `.env.local` (Environment variable template)
+- `index.html` (Root redirect file)
 
 ### 2. Set Up Environment Variables
 
@@ -50,10 +52,20 @@ You can deploy in two ways:
 
 #### Option B: Using Git Integration
 
-1. Push your code to GitHub/GitLab/Bitbucket
-2. Import your project in the Vercel dashboard
-3. Configure the environment variables as described above
-4. Deploy
+1. Push your code to GitHub/GitLab/Bitbucket:
+   ```bash
+   git add .
+   git commit -m "Prepare for Vercel deployment"
+   git push
+   ```
+   
+2. Import your project in the Vercel dashboard:
+   - Go to [vercel.com](https://vercel.com) and log in
+   - Click "Add New" > "Project"
+   - Import your Git repository
+   - Configure the project settings (leave defaults)
+   - Add the environment variables as described above
+   - Click "Deploy"
 
 ### 4. Post-Deployment Configuration
 
@@ -67,11 +79,16 @@ After deployment, make sure to:
 
 ### Common Issues
 
-1. **API Key Not Configured**: If you see errors about API keys, make sure you've set the `YOUTUBE_API_KEY` environment variable in your Vercel dashboard.
+1. **404 Errors**: If you see 404 errors, check:
+   - The vercel.json file has correct routing configuration
+   - Your API endpoints are properly named and in the correct directories
+   - The frontend build completed successfully
 
-2. **CORS Errors**: The application should handle CORS properly, but if you encounter issues, check the Vercel function logs.
+2. **API Key Not Configured**: If you see errors about API keys, make sure you've set the `YOUTUBE_API_KEY` environment variable in your Vercel dashboard.
 
-3. **Playlist Not Found**: Make sure the playlist is public and the ID is correct.
+3. **CORS Errors**: The application should handle CORS properly, but if you encounter issues, check the Vercel function logs.
+
+4. **Playlist Not Found**: Make sure the playlist is public and the ID is correct.
 
 ### Checking Logs
 
@@ -79,18 +96,28 @@ You can check your deployment logs in the Vercel dashboard:
 1. Go to your project
 2. Click on the latest deployment
 3. View the function logs for any errors
+4. For API logs, go to the "Functions" tab to see each serverless function's logs
 
 ## Project Structure for Vercel
 
 ```
 /
 ├── frontend/              # React frontend
+│   ├── dist/             # Built frontend files
+│   ├── public/           # Public assets
+│   │   └── env.js        # Runtime environment configuration
+│   └── src/
+│       ├── services/
+│       │   └── youtubeService.js  # API integration
+│       └── config.js     # Frontend configuration
 ├── backend/
 │   ├── api/              # Serverless functions
 │   │   ├── health.js     # Health check endpoint
+│   │   ├── 404.js        # API 404 handler
 │   │   └── playlist/
 │   │       └── [playlistId].js  # Playlist data endpoint
 ├── vercel.json           # Vercel configuration
+├── index.html            # Root redirect
 ├── .env.local            # Environment variable template
 └── README.md
 ```
@@ -99,7 +126,7 @@ You can check your deployment logs in the Vercel dashboard:
 
 Once deployed, your application will have the following endpoints:
 
-- `GET /api/health` - Health check
+- `GET /api/health` - Health check and environment status
 - `GET /api/playlist/{playlistId}` - Get playlist data
 
 ## Environment Variables
@@ -111,6 +138,15 @@ Once deployed, your application will have the following endpoints:
 To update your deployment:
 
 1. Make your changes locally
-2. Commit and push to your Git repository
+2. Commit and push to your Git repository:
+   ```bash
+   git add .
+   git commit -m "Update application with changes"
+   git push
+   ```
 3. Vercel will automatically deploy the new version (if using Git integration)
 4. Or run `vercel --prod` to deploy manually
+
+## Separate Deployments
+
+If you prefer to deploy the frontend and backend as separate projects, see the [SEPARATE_VERCEL_DEPLOYMENT.md](./SEPARATE_VERCEL_DEPLOYMENT.md) guide.
