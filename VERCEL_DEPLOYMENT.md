@@ -15,6 +15,7 @@ Make sure you have the following files in your project root:
 - `vercel.json` (Vercel configuration)
 - `frontend/` (React frontend)
 - `backend/` (Backend API functions)
+- `.env.local` (Environment variable template)
 
 ### 2. Set Up Environment Variables
 
@@ -26,6 +27,8 @@ Before deploying, you need to configure the YouTube API key in Vercel:
 4. Add the following environment variable:
    - Name: `YOUTUBE_API_KEY`
    - Value: Your actual YouTube Data API key
+
+**Note**: Never commit your actual API key to version control. The `.env.local` file contains a placeholder value.
 
 ### 3. Deploy to Vercel
 
@@ -88,6 +91,7 @@ You can check your deployment logs in the Vercel dashboard:
 │   │   └── playlist/
 │   │       └── [playlistId].js  # Playlist data endpoint
 ├── vercel.json           # Vercel configuration
+├── .env.local            # Environment variable template
 └── README.md
 ```
 
