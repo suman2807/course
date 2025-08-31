@@ -1,8 +1,23 @@
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables
-dotenv.config();
+// Handle ESM in Node.js
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Try to load environment variables from multiple locations
+try {
+  // Try project root .env file
+  dotenv.config({ path: path.join(__dirname, '../../../../.env') });
+  // Also try .env.local for Vercel
+  dotenv.config({ path: path.join(__dirname, '../../../../.env.local') });
+  // Finally, try the backend directory
+  dotenv.config({ path: path.join(__dirname, '../../../.env') });
+} catch (error) {
+  console.error('Error loading environment variables:', error);
+}
 
 // Check if API key is configured
 const isApiKeyConfigured = process.env.YOUTUBE_API_KEY && process.env.YOUTUBE_API_KEY !== 'YOUR_API_KEY_HERE';
@@ -14,6 +29,8 @@ if (isApiKeyConfigured) {
     version: 'v3',
     auth: process.env.YOUTUBE_API_KEY
   });
+} else {
+  console.error('YouTube API key not configured. API will not function properly.');
 }
 
 // Helper function to format ISO 8601 duration to MM:SS or HH:MM:SS
@@ -41,6 +58,8 @@ function formatDuration(duration) {
 }
 
 export default async function handler(req, res) {
+  console.log('Request received:', req.url, req.method, req.query);
+  
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -59,10 +78,13 @@ export default async function handler(req, res) {
   }
   
   try {
+    // Get playlist ID from path parameter
     const { playlistId } = req.query;
+    console.log('Processing playlist ID:', playlistId);
     
     // Validate API key
     if (!isApiKeyConfigured) {
+      console.error('YouTube API key not configured');
       return res.status(500).json({ 
         error: 'YouTube API key not configured. Please contact the administrator.' 
       });
@@ -70,10 +92,12 @@ export default async function handler(req, res) {
     
     // Validate playlist ID format (basic validation)
     if (!playlistId || playlistId.length < 10) {
+      console.error('Invalid playlist ID format:', playlistId);
       return res.status(400).json({ error: 'Invalid playlist ID format.' });
     }
     
     // Fetch playlist details
+    console.log('Fetching playlist details for ID:', playlistId);
     const playlistResponse = await youtube.playlists.list({
       part: ['snippet'],
       id: [playlistId]
@@ -83,10 +107,12 @@ export default async function handler(req, res) {
     });
     
     if (!playlistResponse.data.items || playlistResponse.data.items.length === 0) {
+      console.error('Playlist not found:', playlistId);
       return res.status(404).json({ error: 'Playlist not found. Please check if the playlist URL is correct and the playlist is public.' });
     }
     
     const playlist = playlistResponse.data.items[0];
+    console.log('Playlist found:', playlist.snippet.title);
     
     // Fetch playlist items (videos)
     const videos = [];
@@ -95,6 +121,7 @@ export default async function handler(req, res) {
     const maxVideoFetchErrors = 5;
     
     do {
+      console.log('Fetching playlist items, page token:', nextPageToken || 'initial');
       const playlistItemsResponse = await youtube.playlistItems.list({
         part: ['snippet', 'contentDetails'],
         playlistId: playlistId,
@@ -106,15 +133,18 @@ export default async function handler(req, res) {
       });
       
       const items = playlistItemsResponse.data.items || [];
+      console.log(`Retrieved ${items.length} playlist items`);
       
       for (const item of items) {
         // Skip items without video ID
         if (!item.contentDetails || !item.contentDetails.videoId) {
+          console.log('Skipping item without video ID');
           continue;
         }
         
         // Fetch video details for duration
         try {
+          console.log('Fetching video details for:', item.contentDetails.videoId);
           const videoResponse = await youtube.videos.list({
             part: ['contentDetails'],
             id: [item.contentDetails.videoId]
@@ -155,6 +185,8 @@ export default async function handler(req, res) {
       nextPageToken = playlistItemsResponse.data.nextPageToken;
     } while (nextPageToken && videoFetchErrors < maxVideoFetchErrors);
     
+    console.log('Total videos processed:', videos.length);
+    
     // Send response
     res.status(200).json({
       id: playlistId,
@@ -167,7 +199,7 @@ export default async function handler(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error fetching playlist data:', error);
+    console.error('Error processing request:', error);
     
     // Handle specific error cases
     if (error.code === 400) {
@@ -194,6 +226,9 @@ export default async function handler(req, res) {
     }
     
     // Generic error response
-    res.status(500).json({ error: 'Failed to fetch playlist data from YouTube. Please try again later.' });
+    res.status(500).json({ 
+      error: 'Failed to fetch playlist data from YouTube. Please try again later.',
+      message: error.message || 'Unknown error'
+    });
   }
 }

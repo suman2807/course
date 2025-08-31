@@ -1,5 +1,5 @@
 // YouTube service to handle playlist parsing using our backend API
-const API_BASE_URL = typeof process !== 'undefined' && process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api';
+const API_BASE_URL = '/api'; // Always use relative API path for Vercel compatibility
 
 const extractPlaylistId = (url) => {
   const regex = /[?&]list=([^&]+)/;
@@ -21,7 +21,10 @@ export const fetchPlaylistData = async (playlistUrl) => {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     const response = await fetch(`${API_BASE_URL}/playlist/${playlistId}`, {
-      signal: controller.signal
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
+      }
     });
     
     clearTimeout(timeoutId);
@@ -48,7 +51,7 @@ export const fetchPlaylistData = async (playlistUrl) => {
     }
     
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Unable to connect to the backend service. Please make sure the backend server is running on http://localhost:5000');
+      throw new Error('Unable to connect to the backend service.');
     }
     
     // Re-throw other errors
